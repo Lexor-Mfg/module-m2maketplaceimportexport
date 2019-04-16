@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="seller-2columns-left" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+	<body>
+		<referenceBlock name="seller.page.main.title">
+			<action method="setPageTitle">
+				<argument translate="true" name="title" xsi:type="string">Marketplace Import Products</argument>
+			</action>
+		</referenceBlock>
+		<referenceContainer name="seller.content">
+			<block class="Lexor\M2MaketplaceImportExport\Block\Product\Import" name="product.import" template="Lexor_M2MaketplaceImportExport::product/import.phtml" cacheable="false"/>
+		</referenceContainer>
+	</body>
+</page>
