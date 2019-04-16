@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-namespace Lexor\M2MaketplaceImportExport\Controller\Index;
+namespace Lexor\M2MaketplaceImportExport\Controller\Import;
 
 class Index extends \Magento\Framework\App\Action\Action
 {

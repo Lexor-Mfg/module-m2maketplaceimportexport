@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-namespace Lexor\M2MaketplaceImportExport\Block\Index;
+namespace Lexor\M2MaketplaceImportExport\Block\Import;
 
 class Index extends \Magento\Framework\View\Element\Template
 {
