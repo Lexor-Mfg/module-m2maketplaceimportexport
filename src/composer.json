@@ -1,0 +1,22 @@
+{
+    "name": "lexor/module-m2maketplaceimportexport",
+    "description": "Magento 2 Import Product for Seller in Marketplace Module",
+    "type": "magento2-module",
+    "license": "MIT",
+    "authors": [
+        {
+            "email": "trungpv1601@gmail.com",
+            "name": "trungpv"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Lexor\\M2MaketplaceImportExport\\": ""
+        }
+    }
+}
