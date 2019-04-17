@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="seller-2columns-left" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+	<head>
+        <css src="Lexor_M2MaketplaceImportExport::css/style.css"/>
+    </head>
 	<body>
 		<referenceBlock name="seller.page.main.title">
 			<action method="setPageTitle">

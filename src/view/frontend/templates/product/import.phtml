@@ -1,89 +1,215 @@
 <?php
 /**
- * Webkul Software.
+ * Lexor.com
  *
- * @category  Webkul
- * @package   Webkul_Marketplace
- * @author    Webkul
- * @copyright Copyright (c) 2010-2018 Webkul Software Private Limited (https://webkul.com)
- * @license   https://store.webkul.com/license.html
+ * @category  Lexor
+ * @package   Lexor_M2MaketplaceImportExport
+ * @author    trungpv
  */
 
-// @codingStandardsIgnoreFile
+$helperMarketplace = $this->helper('Webkul\Marketplace\Helper\Data');
+$helper = $this->helper('Lexor\M2MaketplaceImportExport\Helper\Data');
+$partner = $helperMarketplace->getSeller();
+$isPartner = $helperMarketplace->isSeller();
+if ($isPartner == 1):
 
-/** @var $block \Webkul\Marketplace\Block\Product\Create */
+    /* Get allowed product status */
+    $isSimpleAllowed = $helper->isProductTypeAllowed('simple');
+    $isVirtualAllowed = $helper->isProductTypeAllowed('virtual');
+    $isDownloadableAllowed = $helper->isProductTypeAllowed('downloadable');
+    $isConfigurableAllowed = $helper->isProductTypeAllowed('configurable');
 
-$helper = $this->helper('Webkul\Marketplace\Helper\Data');
-$partner=$helper->getSeller();
-if(($partner['twitter_id']=='')||($partner['facebook_id']=='')||($partner['banner_pic']=='')||($partner['logo_pic']=='')||($partner['company_locality']=='')||($partner['country_pic']=='')||($partner['company_description']=='')){?>
-		<div class="wk-profile-alert">
-			<strong><?php echo __('Warning')?>! </strong><?php echo __('Please Complete')?>
-			<a href="<?php echo $block->getUrl('marketplace/account/editprofile', ['_secure' => $this->getRequest()->isSecure()])?>" style="color: inherit;"><?php echo __('Your Profile')?></a>
-			<span class="wk-close">X</span>
-		</div>
-<?php 
-} ?>
-<form action="<?php echo $block->getUrl('marketplace/product/import', ['_secure' => $this->getRequest()->isSecure()]) ?>" enctype="multipart/form-data" method="post" id="form-customer-product-import" data-mage-init='{"validation":{}}'>
-	<div class="wk-mp-design">
-		<fieldset class="fieldset info wk-mp-fieldset">
-			<legend class="legend">
-				<span><?php echo __('Import Product') ?></span>
-				<button class="button wk-mp-btn" title="Continue" type="submit">
-					<span><span><?php echo __('Continue') ?></span></span>
-				</button>
-			</legend>
-			<?php echo $block->getBlockHtml('formkey')?>
-			<?php echo $block->getBlockHtml('seller.formkey')?>
-			<?php if (count($helper->getAllowedSets()) > 1) { ?>
-				<div class="field required">
-					<label class="label"><?php echo __('Attribute Set') ?>:</label>
-					<div class="control">
-						<select name="set" class="required-entry">
-						<?php foreach($helper->getAllowedSets() as $set) {?>
-							<option value="<?php echo $set['value'] ?>"><?php echo $set['label']?></option>
-						<?php } ?>
-						</select>
-					</div>
-				</div>
-			<?php 
-			} else { 
-				$allowedSets = $helper->getAllowedSets();
-				?>
-				<input type="hidden" name="set" value="<?php echo $allowedSets[0]['value'] ?>" />
-				<?php 
-			} ?>
-			<?php if (count($helper->getAllowedProductTypes()) > 1) { ?>
-				<div class="field required">
-					<label class="label"><?php echo __('Product Type') ?>:</label>
-					<div class="control">
-						<select name="type" class="required-entry">
-						<?php 
-						foreach($helper->getAllowedProductTypes() as $type) {?>
-							<option value="<?php echo $type['value'] ?>"><?php echo $type['label']?></option>
-						<?php } ?>
-						</select>
-					</div>
-				</div>
-			<?php 
-			} else { 
-				$allowedProducts = $helper->getAllowedProductTypes();
-				?>
-				<input type="hidden" name="type" value="<?php echo $allowedProducts[0]['value'] ?>" />
-				<?php 
-			} ?>
-			<div class="field required">
-					<label class="label"><?php echo __('Select File to Import') ?>:</label>
-					<div class="control">
-						<input name="import_file" id="import_file" value="" title="Select File to Import" class="required-entry input-text" type="file" data-validate="{required:true}"/>
-					</div>
-				</div>
-			<?php echo $block->getChildHtml(); ?>
-		</fieldset>
-	</div>		
-</form>
-<div class="buttons-set">
-	<p class="required">* <?php echo __('Required Fields') ?></p>		
-	<p class="back-link">
-		<a href="javascript:;" onclick="javascript: window.history.back();" class="left">&laquo; <?php echo __('Back') ?></a>
-	</p>
-</div>
+    $sampleCsv = $helper->getSampleCsv();
+    $sampleXls = $helper->getSampleXls();
+
+    $url = $block->getUrl('marketplace/product/options/');
+    $data = [
+        "infoUrl" => $url
+    ];
+
+    $data = $this->helper('Magento\Framework\Json\Helper\Data')->jsonEncode($data);
+
+    if (
+        $partner['twitter_id'] == '' ||
+        $partner['facebook_id'] == '' ||
+        $partner['banner_pic'] == '' ||
+        $partner['logo_pic'] == '' ||
+        $partner['company_locality'] == '' ||
+        $partner['country_pic'] == '' ||
+        $partner['company_description'] == ''
+    ) { ?>
+        <div class="wk-profile-alert">
+            <strong><?php echo __('Warning'); ?>! </strong><?php echo __('Please Complete'); ?>
+            <a href="<?php echo $block->getUrl('marketplace/account/editprofile', [
+                '_secure' => $this->getRequest()->isSecure()
+            ]); ?>" style="color: inherit;"><?php echo __('Your Profile'); ?></a>
+            <span class="wk-close">X</span>
+        </div>
+    <?php }
+    ?>
+    <form action="<?php echo $block->getUrl('marketplace/product/import', [
+        '_secure' => $this->getRequest()->isSecure()
+    ]); ?>" enctype="multipart/form-data" method="post" id="form-customer-product-import" data-mage-init='{"validation":{}}'>
+        <?php echo $block->getBlockHtml('formkey'); ?>
+        <?php echo $block->getBlockHtml('seller.formkey'); ?>
+        <div class="wk-mp-design">
+            <fieldset class="fieldset info wk-mp-fieldset">
+                <legend class="legend">
+                    <span><?php echo __('Sample Files'); ?></span>
+                </legend>
+                <div class="lx-ix-sample-files">
+                    <table style="width: 100%;">
+                        <tr>
+                            <?php if ($isSimpleAllowed) { ?>
+                                <td style="padding: 5px;">
+                                    <a href="<?php echo $sampleCsv[0]; ?>"><?php echo __(
+    "Sample Simple Product Type Csv File"
+); ?></a>
+                                </td>
+                            <?php } ?>
+                            <?php if ($isConfigurableAllowed) { ?>
+                                <td style="padding: 5px;">
+                                    <a href="<?php echo $sampleCsv[1]; ?>"><?php echo __(
+    "Sample Configurable Product Type Csv File"
+); ?></a>
+                                </td>
+                            <?php } ?>
+                        </tr>
+                        <tr>
+                            <?php if ($isSimpleAllowed) { ?>
+                                <td style="padding: 5px;">
+                                    <a href="<?php echo $sampleXls[0]; ?>"><?php echo __(
+    "Sample Simple Product Type XLS File"
+); ?></a>
+                                </td>
+                            <?php } ?>
+                            <?php if ($isConfigurableAllowed) { ?>
+                                <td style="padding: 5px;">
+                                    <a href="<?php echo $sampleXls[1]; ?>"><?php echo __(
+    "Sample Configurable Product Type XLS File"
+); ?></a>
+                                </td>
+                            <?php } ?>
+                        </tr>
+                    </table>
+                </div>
+                <hr>
+                
+                <legend class="legend">
+                    <span><?php echo __('Import Product'); ?></span>
+                    <button class="button wk-mp-btn" title="Upload & Import" type="submit">
+                        <span><span><?php echo __('Upload & Import'); ?></span></span>
+                    </button>
+                </legend>
+                <?php if (count($helperMarketplace->getAllowedSets()) > 1) { ?>
+                    <div class="field required">
+                        <label for="attribute_set" class="label">
+                            <span><?php echo __("Select Attribute Set"); ?></span>
+                        </label>
+                        <div class="control">
+                            <select data-validate="{'validate-select':true}" title="<?php echo __(
+                                "Attribute Set"
+                            ); ?>" class="required-entry" id="attribute_set" name="attribute_set" aria-required="true">
+                                <option value=""><?php echo __("Select Attribute Set"); ?></option>
+                                <?php foreach ($helperMarketplace->getAllowedSets() as $attribute): ?>
+                                    <option value="<?php echo $attribute->getAttributeSetId(); ?>"><?php echo $attribute->getAttributeSetName(); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                <?php 
+                } else { 
+                    $allowedSets = $helperMarketplace->getAllowedSets();
+                    ?>
+                    <input type="hidden" name="attribute_set" value="<?php echo $allowedSets[0]['value'] ?>" />
+                    <?php 
+                } ?>
+               
+                <div class="field required">
+                    <label for="csv_file" class="label">
+                        <span><?php echo __("Upload CSV/XLS File"); ?></span>
+                    </label>
+                    <div class="control">
+                        <input type="file" data-validate="{required:true}" class="input-text required-entry" title="<?php echo __(
+                            "CSV/XML/XLS"
+                        ); ?>" name="csv_file" id="csv_file" aria-required="true">
+                    </div>
+                </div>
+                <div class="field required">
+                    <label for="images_zip_file" class="label">
+                        <span><?php echo __("Upload Images Zip"); ?></span>
+                    </label>
+                    <div class="control">
+                        <input type="file" data-validate="{required:true}" class="input-text required-entry" title="<?php echo __(
+                            "Images Zip"
+                        ); ?>" name="images_zip_file" id="images_zip_file" aria-required="true">
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </form>
+    <?php if ($isConfigurableAllowed) {
+
+        $superAttributes = $helper->getSuperAttributes();
+        $attributeInfo = implode(", ", $superAttributes);
+        ?>
+        <!-- <hr>
+        <h3>Attribute Options Info</h3>
+        <div class="wk-mu-info-container wk-mu-super-attributes">
+            <div class="wk-field">
+                <div class="wk-mu-label"><?php echo __("Configurable Attributes"); ?></div>
+                <div class="wk-mu-content">
+                    <?php echo $attributeInfo; ?>
+                </div>
+            </div>
+            <div class="wk-field">
+                <div class="wk-mu-sa-overlay wk-display-none">
+                    <div class="wk-mu-sa-loader"></div>
+                </div>
+                <div class="wk-mu-label"><?php echo __("Configurable Attribute Options"); ?></div>
+                <div class="wk-mu-content">
+                    <select data-validate="{'validate-select':true}" title="<?php echo __(
+                        "Attribute Info"
+                    ); ?>" class="required-entry" id="attribute_info" name="attribute_info" aria-required="true">
+                        <option value=""><?php echo __("Select Attribute"); ?></option>
+                        <?php foreach ($superAttributes as $id => $code): ?>
+                            <option value="<?php echo $id; ?>"><?php echo $code; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="wk-mu-options">
+                    <div class="wk-mu-options-title">
+                        <?php echo __("Options"); ?>
+                    </div>
+                    <div class="wk-mu-options-content">
+                        <?php echo __("No attribute is selected."); ?>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+    <?php
+    } ?>
+    <hr>
+    <div class="buttons-set">
+        <p class="required">* <?php echo __('Required Fields'); ?></p>
+        <p class="back-link">
+            <a href="javascript:;" onclick="javascript: window.history.back();" class="left">&laquo; <?php echo __(
+                'Back'
+            ); ?></a>
+        </p>
+    </div>
+    <script type="text/x-magento-init">
+        {
+                    "body": {
+                        "Lexor_M2MaketplaceImportExport/js/import": <?php echo $data; ?>
+                    }
+                }
+            </script>
+<?php
+else:
+     ?>
+    <h2 class="wk-mp-error-msg">
+        <?php echo __("To Become Seller Please Contact to Admin."); ?>
+    </h2>
+<?php
+endif; ?>
