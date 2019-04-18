@@ -10,29 +10,12 @@ use Magento\Framework\View\Result\PageFactory;
 use Magento\Framework\App\RequestInterface;
 use Ramsey\Uuid\Uuid;
 
-/**
- * Webkul Marketplace Product Create Controller Class.
- */
 class Import extends Action
 {
-    /**
-     * @var \Magento\Customer\Model\Session
-     */
+    protected $_request;
     protected $_customerSession;
-
-    /**
-     * @var \Magento\Framework\Data\Form\FormKey\Validator
-     */
     protected $_formKeyValidator;
-
-    /**
-     * @var \Lexor\M2MaketplaceImportExport\Helper\Data
-     */
     protected $_helper;
-
-    /**
-     * @var \Webkul\Marketplace\Helper\Data
-     */
     protected $_helperMarketplace;
 
     public function __construct(
@@ -43,6 +26,7 @@ class Import extends Action
         \Lexor\M2MaketplaceImportExport\Helper\Data $helper,
         \Webkul\Marketplace\Helper\Data $helperMarketplace
     ) {
+        $this->_request = $context->getRequest();
         $this->_customerSession = $customerSession;
         $this->_formKeyValidator = $formKeyValidator;
         $this->_resultPageFactory = $resultPageFactory;
@@ -91,7 +75,9 @@ class Import extends Action
             try {
                 // Check Max upload size
                 $this->messageManager->addNotice(
-                    $this->_objectManager->get(\Magento\ImportExport\Helper\Data::class)->getMaxUploadSizeMessage()
+                    $this->_objectManager
+                        ->get(\Magento\ImportExport\Helper\Data::class)
+                        ->getMaxUploadSizeMessage()
                 );
                 if (!$this->getRequest()->isPost()) {
                     /** @var \Magento\Framework\View\Result\Page $resultPage */
@@ -106,17 +92,39 @@ class Import extends Action
 
                     return $resultPage;
                 }
+                // Set Max Time
+                set_time_limit(0);
                 if (!$this->_formKeyValidator->validate($this->getRequest())) {
                     return $this->resultRedirectFactory
                         ->create()
                         ->setPath('*/*/import', ['_secure' => $this->getRequest()->isSecure()]);
                 }
-                
+
                 // Process POST request
-                return $this->upload();
+                $uuid = Uuid::uuid4();
+
+                // Upload Processing
+                $uploadProcess = $this->upload($uuid);
+                if (!$uploadProcess['success']) {
+                    $this->messageManager->addError(__($uploadProcess['msg']));
+                    return $this->resultRedirectFactory
+                        ->create()
+                        ->setPath('*/*/import', ['_secure' => $this->getRequest()->isSecure()]);
+                }
+
+                // Process data and import to DB
+                $importProcess = $this->runImport($uploadProcess);
+                if (!$importProcess['success']) {
+                    $this->messageManager->addError(__($importProcess['msg']));
+                    return $this->resultRedirectFactory
+                        ->create()
+                        ->setPath('*/*/import', ['_secure' => $this->getRequest()->isSecure()]);
+                }
+
+                $this->messageManager->addSuccess(__($importProcess['msg']));
+                return $this->resultRedirectFactory->create()->setPath('*/*/import');
             } catch (\Exception $e) {
                 $this->messageManager->addError($e->getMessage());
-
                 return $this->resultRedirectFactory
                     ->create()
                     ->setPath('*/*/import', ['_secure' => $this->getRequest()->isSecure()]);
@@ -133,35 +141,82 @@ class Import extends Action
     /**
      * Upload process
      */
-    private function upload()
+    private function upload($uuid)
     {
+        $result = ['success' => true, 'uuid' => $uuid];
+
         $validateData = $this->_helper->validateUploadedFiles();
         if ($validateData['error']) {
             $this->messageManager->addError(__($validateData['msg']));
             return $this->resultRedirectFactory->create()->setPath('*/*/import');
         }
+        // Build profile
         $productType = $validateData['type'];
         $fileName = $validateData['csv'];
         $fileData = $validateData['csv_data'];
-        $result = $this->_helper->saveProfileData(
-            $productType,
-            $fileName,
-            $fileData,
-            $validateData['extension']
+        $extension = $validateData['extension'];
+        $attributeSet = $this->_request->getParam('attribute_set');
+        $profile = [
+            'name' => time() . ".csv",
+            'customer_id' => $this->_helper->getCustomerId(),
+            'product_type' => $productType,
+            'attribute_set_id' => $attributeSet,
+            'image_file' => 'images',
+            'link_file' => 'links',
+            'sample_file' => 'samples',
+            'data_row' => serialize($fileData),
+            'file_type' => $extension
+        ];
+        $result['profile'] = $profile;
+
+        // Upload file csv
+        $uploadCsv = $this->_helper->uploadCsv(
+            $uuid,
+            $profile,
+            $validateData['extension'],
+            $fileName
         );
-        $uploadCsv = $this->_helper->uploadCsv($result, $validateData['extension'], $fileName);
         if ($uploadCsv['error']) {
-            $this->messageManager->addError(__($uploadCsv['msg']));
-            return $this->resultRedirectFactory->create()->setPath('*/*/import');
-        }
-        $uploadZip = $this->_helper->uploadZip($result, $fileData);
-        if ($uploadZip['error']) {
-            $this->messageManager->addError(__($uploadZip['msg']));
-            return $this->resultRedirectFactory->create()->setPath('*/*/import');
+            $result['success'] = false;
+            $result['msg'] = $uploadCsv['msg'];
+        } else {
+            $result['uploadCsv'] = $uploadCsv;
         }
 
-        $message = __('Your zip file was uploaded and unpacked.');
-        $this->messageManager->addSuccess($message);
-        return $this->resultRedirectFactory->create()->setPath('*/*/import');
+        // Upload zip
+        $uploadZip = $this->_helper->uploadZip($uuid, $profile, $fileData);
+        if ($uploadZip['error']) {
+            $result['success'] = false;
+            $result['msg'] = $uploadZip['msg'];
+        } else {
+            $result['uploadZip'] = $uploadZip;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Run Import Products
+     */
+    private function runImport($uploadData)
+    {
+        $return = ['success' => true];
+        try {
+            $uuid = $uploadData['uuid'];
+            $profile = $uploadData['profile'];
+            $sellerId = $this->_helper->getCustomerId();
+            $productCount = $this->_helper->getTotalCount($profile);
+            for ($i = 1; $i <= $productCount; $i++) {
+                $wholeData = $this->_helper->calculateProductRowData($uuid, $profile, $i);
+                $result = $this->_helper->saveProduct($sellerId, $wholeData);
+            }
+            $return['msg'] = 'Import products are successfully.';
+            $this->_helper->flushData($uuid);
+        } catch (\Exception $e) {
+            $return['success'] = false;
+            $return['msg'] = $e->getMessage();
+        }
+
+        return $return;
     }
 }

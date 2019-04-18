@@ -6,38 +6,12 @@ use Magento\Eav\Model\ResourceModel\Entity\Attribute\Set\CollectionFactory;
 
 class Import extends \Magento\Framework\View\Element\Template
 {
-    /**
-     * @var \Magento\Store\Model\StoreManagerInterface
-     */
     protected $_storeManager;
-
-    /**
-     * @var \Magento\Framework\Data\Form\FormKey
-     */
     protected $_formKey;
-
-    /**
-     * @var \Magento\Eav\Model\Entity
-     */
     protected $_entity;
-
-    /**
-     * @var \Webkul\Marketplace\Helper\Data
-     */
     protected $marketplaceHelper;
-
-    /**
-     * @var CollectionFactory
-     */
     protected $_setCollection;
 
-    /**
-     * @param \Magento\Framework\View\Element\Template\Context $context
-     * @param \Magento\Eav\Model\Entity                        $entity
-     * @param \Webkul\Marketplace\Helper\Data                  $marketplaceHelper
-     * @param CollectionFactory                                $setCollection
-     * @param array                                            $data
-     */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
         \Magento\Eav\Model\Entity $entity,
