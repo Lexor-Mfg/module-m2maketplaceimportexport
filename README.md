@@ -31,11 +31,11 @@ Map column **images** and file name images in .zip file
 
 - CSV/XLS file
 
-  ![Screenshot from 2019-04-19 11-41-47](./screens/Screenshot from 2019-04-19 11-41-47.png)
+![Screenshot from 2019-04-19 11-41-47](./screens/Screenshot-from-2019-04-19-11-41-47.png)
 
 - Images zip
 
-  ![Screenshot from 2019-04-19 11-43-08](./screens/Screenshot from 2019-04-19 11-43-08.png)
+![Screenshot from 2019-04-19 11-43-08](./screens/Screenshot-from-2019-04-19-11-43-08.png)
 
 ### 5. Import
 
